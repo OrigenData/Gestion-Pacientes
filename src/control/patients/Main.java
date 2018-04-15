@@ -76,9 +76,7 @@ public class Main {
 				Runtime obrun = Runtime.getRuntime();
 				
 				try {
-
 					obrun.exec("gnome-terminal -- htop");
-
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
