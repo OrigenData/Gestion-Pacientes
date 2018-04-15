@@ -1,4 +1,4 @@
-GtkTreeViewSQL
+Gestion Pacientes
 =========================
 **Description:** Captura nombre y edad de usuarios y los almacena en una base de datos PostgreSQL
 
@@ -9,8 +9,6 @@ GtkTreeViewSQL
 **Documentation:** https://www.origendata.com/
 
 ###### Screenshot
-![Screenshot](https://origendata.files.wordpress.com/2018/04/gtktreeviewsql.png)
-
 
 
 ### Dependencies
@@ -19,16 +17,3 @@ GtkTreeViewSQL
 * GTK 3.20
 * java-gnome 4.1.3
 * PostgreSQL JDBC 4.2
-
-### Tabla del la Base de Datos
-La base de datos se llama TreeView y se crea una tabla nombrada "Persona"
-
-```
-CREATE TABLE public."Persona"
-(
-    "perID" serial NOT NULL,
-    "perNombre" character varying(30),
-    "perEdad" character varying(2),
-    CONSTRAINT "Persona_pkey" PRIMARY KEY ("perID")
-)
-```

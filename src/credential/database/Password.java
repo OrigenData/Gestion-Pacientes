@@ -2,8 +2,8 @@ package credential.database;
 
 public class Password {
 
-	public static String passwd;
-	
+	private static String passwd;
+
 	public Password() {
 
 	}
@@ -12,13 +12,9 @@ public class Password {
 		return passwd;
 	}
 
-	
 	@SuppressWarnings("static-access")
 	public void setPasswd(String passwd) {
 		this.passwd = passwd;
 	}
-	
-	
-	
 
 }

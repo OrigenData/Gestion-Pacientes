@@ -1,11 +1,14 @@
 package control.pages;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.gnome.gdk.Event;
 import org.gnome.gtk.Builder;
 import org.gnome.gtk.Button;
 import org.gnome.gtk.Button.Clicked;
@@ -15,9 +18,13 @@ import org.gnome.gtk.CellRendererText;
 import org.gnome.gtk.ComboBox;
 import org.gnome.gtk.DataColumnString;
 import org.gnome.gtk.Entry;
+import org.gnome.gtk.EntryIconPosition;
+import org.gnome.gtk.Entry.IconPress;
 import org.gnome.gtk.ListStore;
 import org.gnome.gtk.TreeIter;
+import org.gnome.gtk.TreePath;
 import org.gnome.gtk.TreeView;
+import org.gnome.gtk.TreeView.RowActivated;
 import org.gnome.gtk.TreeViewColumn;
 
 import credential.database.Password;
@@ -39,10 +46,12 @@ public class Cita extends Password implements ServerPG{
     TreeIter row;
     DataColumnString citaIDColumn, paciNombreColumn, servNombreColumn, citaFechaColumn, servHoraInicioColumn, servHoraSalidaColumn, empNombreColumn;
     CellRendererText citaIDText, paciNombreText, servNombreText, citaFechaText, servHoraInicioText, servHoraSalidaText, empNombreText;
-    Entry citaFechaEntry, citaPacienteEntry;
-    Button buttonCitaActualizar, buttonCitaGuardar, buttonCitaLimpiar;
+    Entry citaFechaEntry, citaPacienteEntry , buscarCitaEntry;
+    Button buttonCitaActualizar, buttonCitaGuardar, buttonCitaLimpiar, buttonCitaEliminar, buttonCitaEditar;
+    String idCita=null; //Id de la tabla Cita
     Connection DB =null;
 	Statement st = null;
+	PreparedStatement pst = null;
 
 	
 	public Cita(Builder b) {
@@ -60,9 +69,10 @@ public class Cita extends Password implements ServerPG{
 		servicioCombo = (ComboBox) builder.getObject("entryListaServicioCitas");
 				
 		servicioStore = new ListStore(new DataColumnString[]{
-			    		
-						serviceID = new DataColumnString(),
-				});
+				
+				serviceID = new DataColumnString(),
+								
+		});
 				
 		servicioCombo.setModel(servicioStore);
 				
@@ -83,7 +93,8 @@ public class Cita extends Password implements ServerPG{
 		
 		citaPacienteEntry = (Entry) builder.getObject("entryIDClientCitas");
 		citaFechaEntry = (Entry) builder.getObject("entryFechaCitas");
-				
+		buscarCitaEntry = (Entry) builder.getObject("entryBuscarCita");
+		buscarCitaEntry.connect(on_entryBuscarCita_icon_press());		
 		
 		//#################		Button		#################	\\
 				
@@ -97,6 +108,12 @@ public class Cita extends Password implements ServerPG{
 		buttonCitaGuardar = (Button) builder.getObject("buttonCitaGuardar");
 		buttonCitaGuardar.connect(on_buttonCitaGuardar_clicked());
 		
+		buttonCitaEliminar = (Button) builder.getObject("buttonCitaEliminar");
+		buttonCitaEliminar.connect(on_buttonCitaEliminar_clicked());
+		
+		buttonCitaEditar = (Button) builder.getObject("buttonCitaEditar");
+		buttonCitaEditar.connect(on_buttonCitaEditar_clicked());
+		
 		
 		//#################		TreeView		#################	\\
 		
@@ -105,16 +122,17 @@ public class Cita extends Password implements ServerPG{
         /* Construccion del modelo */
         listStore = new ListStore(new DataColumnString[]{
         		
-        		citaIDColumn = new DataColumnString(),
-        		paciNombreColumn = new DataColumnString(),
-        		servNombreColumn = new DataColumnString(),
-        		citaFechaColumn = new DataColumnString(),
-        		servHoraInicioColumn = new DataColumnString(),
-        		servHoraSalidaColumn = new DataColumnString(),
-        		empNombreColumn = new DataColumnString(),
+        		citaIDColumn 			= new DataColumnString(),
+        		paciNombreColumn		= new DataColumnString(),
+        		servNombreColumn		= new DataColumnString(),
+        		citaFechaColumn			= new DataColumnString(),
+        		servHoraInicioColumn	= new DataColumnString(),
+        		servHoraSalidaColumn	= new DataColumnString(),
+        		empNombreColumn			= new DataColumnString(),
         });
  
         /*Establezca TreeModel que se usa para obtener datos de origen para este TreeView*/
+        view.connect(on_treeview_Citas_ID_row_activated());
         view.setModel(listStore);
         
         
@@ -173,16 +191,158 @@ public class Cita extends Password implements ServerPG{
         
 	}
 	
+	//---------------------- Accion de Botones ----------------------//
 	
 	
-	private DaySelectedDoubleClick on_calendarID_day_selected_double_click() {
-		return new Calendar.DaySelectedDoubleClick() {
+	
+	private Clicked on_buttonCitaEditar_clicked() {
+		return new Button.Clicked() {
 			
 			@Override
-			public void onDaySelectedDoubleClick(Calendar arg0) {
+			public void onClicked(Button arg0) {
 				
-				String Data = String.format("%d-%d-%d", citaCalendar.getDateYear(),citaCalendar.getDateMonth(),citaCalendar.getDateDay());
-				citaFechaEntry.setText(Data);
+				
+				
+				try {
+			        //Conexion con la base de datos
+			        DB = DriverManager.getConnection(URL, DBUSER, getPasswd());
+			        String query;
+			        
+			        query = "UPDATE \"Cita\" "
+			        		+ "SET \"citaFecha\" = ? , \"citaServicio\" = ? , \"citaPaciente\"= ? "
+			        		+ "WHERE \"citaID\" = ?;";
+
+			        pst= DB.prepareStatement(query);
+			        
+			        pst.setDate(1, Date.valueOf(citaFechaEntry.getText()));
+			        pst.setInt(2, servicioCombo.getActive());
+			        pst.setInt(3, Integer.valueOf(citaPacienteEntry.getText()));
+			        pst.setInt(4, Integer.valueOf(idCita));
+
+			        pst.executeUpdate();
+			        
+			        pst.close();
+			        DB.close();
+			        
+			    } catch (SQLException e) {
+			        System.err.println("Error: " +e.getMessage() );
+			 
+			    }
+				
+				
+				
+				
+			}
+		};
+	}
+
+	private Clicked on_buttonCitaEliminar_clicked() {
+		return new Button.Clicked() {
+			
+			@Override
+			public void onClicked(Button arg0) {
+				
+				
+				try {
+			        //Conexion con la base de datos
+			        DB = DriverManager.getConnection(URL, DBUSER, getPasswd());
+
+			        String query=null;
+			        
+			        query =	 "DELETE FROM \"Cita\" WHERE  \"citaID\"   = ?";
+
+			        pst= DB.prepareStatement(query);
+			        
+			        pst.setInt(1, Integer.valueOf(idCita));
+			        
+			        pst.executeUpdate();
+			        
+			        pst.close();
+			        DB.close();
+			 
+
+			    } catch (SQLException e) {
+			        System.err.println("Error: " +e.getMessage() );
+			 
+			    }
+				
+			}
+		};
+	}
+
+	private RowActivated on_treeview_Citas_ID_row_activated() {
+		return new TreeView.RowActivated() {
+			
+			@Override
+			public void onRowActivated(TreeView arg0, TreePath arg1, TreeViewColumn arg2) {
+				// TODO Auto-generated method stub
+				final TreeIter row;
+				 
+		        row = listStore.getIter(arg1);
+		        //
+		        //idCita
+		        idCita  = listStore.getValue(row, citaIDColumn);
+		        String paciNombre = listStore.getValue(row, paciNombreColumn);
+		        String servNombre = listStore.getValue(row, servNombreColumn);
+		        String citaFecha = listStore.getValue(row, citaFechaColumn);
+		        
+		        
+		        String idPaciente = null;
+		        //Conexion con la base de datos
+		        try {
+		        	
+		        	DB = DriverManager.getConnection(URL, DBUSER, getPasswd());
+		        	
+		        	st = DB.createStatement();
+						
+					String query=null;
+				        
+			        query =String.format("SELECT \"paciID\" FROM \"Paciente\" WHERE \"paciNombre\"= '%s';",paciNombre);
+
+			        ResultSet rs = st.executeQuery(query);
+			        while    ( rs.next() )
+			        	idPaciente = rs.getString("paciID");
+
+				        
+				    rs.close();
+				    st.close();
+				    DB.close();
+				        
+					} catch (SQLException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+			         
+		         
+		         
+		         citaPacienteEntry.setText(idPaciente);
+		         
+		         for (int i = 0; i < servicioArray.length; i++) {
+		        	 
+		        	 if(servicioArray[i].equals(servNombre)) {
+		        		 
+		        		 servicioCombo.setActive(i);
+		        		 break;
+		        		 
+		        	 }
+					
+				}
+		         citaFechaEntry.setText(citaFecha);
+		         
+		         
+			}
+		};
+	}
+	
+
+	private IconPress on_entryBuscarCita_icon_press() {
+		return new Entry.IconPress() {
+			
+			@Override
+			public void onIconPress(Entry arg0, EntryIconPosition arg1, Event arg2) {
+				// TODO Auto-generated method stub
+				
+				buscarCitaEntry.setText("");
 				
 			}
 		};
@@ -190,7 +350,20 @@ public class Cita extends Password implements ServerPG{
 
 
 
-	//---------------------- Accion de Botones ----------------------//
+	private DaySelectedDoubleClick on_calendarID_day_selected_double_click() {
+		return new Calendar.DaySelectedDoubleClick() {
+			
+			@Override
+			public void onDaySelectedDoubleClick(Calendar arg0) {
+				
+				String Data = String.format("%d-%d-%d",
+						citaCalendar.getDateYear(),citaCalendar.getDateMonth(),citaCalendar.getDateDay());
+				citaFechaEntry.setText(Data);
+				
+			}
+		};
+	}
+
 	
 	
 	
@@ -215,7 +388,7 @@ public class Cita extends Password implements ServerPG{
 			@Override
 			public void onClicked(Button arg0) {
 				
-				int SelecServiceCombo = 0;
+				int SelecServiceCombo = 0;	
 				
 				try {
 					
@@ -233,25 +406,32 @@ public class Cita extends Password implements ServerPG{
 				
 				//##################	Paciente INTO		##################//
 				
+
                 try {
 			        //Conexion con la base de datos
 			        DB = DriverManager.getConnection(URL, DBUSER, getPasswd());
-			 
-			        // Se hara una consulta
-			        st = DB.createStatement();
 			        
-			        String query = String.format("INSERT INTO \"%s\" ( \"%s\" , \"%s\" , \"%s\" )"
-			        		+ "VALUES ( '%s' , '%s' , '%s' );" 
-			        		+ "", "Cita","citaFecha","citaServicio","citaPaciente",
-			        		citaFechaEntry.getText(), SelecServiceCombo, citaPacienteEntry.getText());
+			        String query=null;
 			        
 			        
-			        st.executeUpdate(query);
+			        query = "INSERT INTO \"Cita\" ( \"citaFecha\" , \"citaServicio\" , \"citaPaciente\" ) "
+			        		+ "VALUES ( ?  , ? , ? );";
 			        
-			        st.close();
+			        
+
+			        pst= DB.prepareStatement(query);
+
+			        pst.setDate(1, Date.valueOf(citaFechaEntry.getText()));
+			        pst.setInt(2, SelecServiceCombo);
+			        pst.setInt(3, Integer.valueOf(citaPacienteEntry.getText()));
+			        
+			        pst.executeUpdate();
+			        
+			        pst.close();
 			        DB.close();
+			        
 			    } catch (SQLException e) {
-			        System.err.println("Error: " +e.getMessage() );
+			        System.err.println("Error: ss " +e.getMessage() );
 			 
 			    }
 				
