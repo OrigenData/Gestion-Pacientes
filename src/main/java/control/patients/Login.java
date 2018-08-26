@@ -37,7 +37,7 @@ public class Login extends Password implements ServerPG{
 
 		try {
 			builder = new Builder();
-			builder.addFromFile("src/gui/app/Login.glade");
+			builder.addFromFile("src/main/java/gui/app/Login.glade");
 
 		} catch (FileNotFoundException | ParseException e) {
 
@@ -49,7 +49,7 @@ public class Login extends Password implements ServerPG{
 		window.showAll();
 
 	}
-
+	
 	private void getObjectGlade() {
 		
 		//Window

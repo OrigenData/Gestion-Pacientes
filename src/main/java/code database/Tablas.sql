@@ -1,6 +1,6 @@
 
 
-CREATE DATABASE "GestionPacientesBD"
+CREATE DATABASE "GestionPacientes"
     WITH
     OWNER = postgres
     ENCODING = 'UTF8'
@@ -33,6 +33,18 @@ CREATE TABLE public."Servicio"
 );
 
 
+
+CREATE TABLE public."Paciente"
+(
+    "paciID" serial NOT NULL,
+    "paciNombre" character varying(30),
+    "paciEdad" character varying(2),
+    "paciEmail" character varying(30),
+    "paciTelefono" character varying(10),
+    CONSTRAINT "Paciente_pkey" PRIMARY KEY ("paciID")
+);
+
+
 CREATE TABLE public."Cita"
 (
     "citaID" serial NOT NULL,
@@ -44,26 +56,9 @@ CREATE TABLE public."Cita"
     CONSTRAINT "Servicio_fkey" FOREIGN KEY ("citaServicio")
         REFERENCES public."Servicio" ("servID") MATCH SIMPLE
         ON UPDATE NO ACTION
-        ON DELETE NO ACTION
+        ON DELETE NO ACTION,
     CONSTRAINT "Paciente_fkey" FOREIGN KEY ("citaPaciente")
 	REFERENCES public."Paciente" ("paciID") MATCH SIMPLE
-        ON UPDATE NO ACTION
-        ON DELETE NO ACTION;
-);
-
-	
-
-CREATE TABLE public."Paciente"
-(
-    "paciID" serial NOT NULL,
-    "paciNombre" character varying(30),
-    "paciEdad" character varying(2),
-    "paciEmail" character varying(30),
-    "paciTelefono" character varying(10),
-    "paciCita" integer,
-    CONSTRAINT "Paciente_pkey" PRIMARY KEY ("paciID"),
-    CONSTRAINT "Cita_fkey" FOREIGN KEY ("paciCita")
-        REFERENCES public."Cita" ("citaID") MATCH SIMPLE
         ON UPDATE NO ACTION
         ON DELETE NO ACTION
 );

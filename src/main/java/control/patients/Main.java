@@ -36,7 +36,7 @@ public class Main {
 
 		try {
 			builder = new Builder();
-			builder.addFromFile("src/gui/app/Main.glade");
+			builder.addFromFile("src/main/java/gui/app/Main.glade");
 		} catch (FileNotFoundException | ParseException e) {
 			e.printStackTrace();
 		}
