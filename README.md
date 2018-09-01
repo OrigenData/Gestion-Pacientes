@@ -15,7 +15,7 @@ Gestion Pacientes
 ![Screenshot](https://origendata.files.wordpress.com/2018/04/captura-de-pantalla-de-2018-04-10-11-53-57.png)
 ![Screenshot](https://origendata.files.wordpress.com/2018/04/captura-de-pantalla-de-2018-04-10-11-54-00.png)
 
-### Dependencies
+### Dependencies (Test on Fedora 28)
 
 **Gestion Pacientes** requiere que se instalen las siguientes librerias para ejecutar:
 * GTK 3.20

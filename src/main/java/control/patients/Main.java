@@ -54,14 +54,14 @@ public class Main {
 		//pagEmpleado.treeviewEmpleado();
 
 		pagServicio = new Servicio(builder);
-		pagServicio.treeviewServicio();
+		//pagServicio.treeviewServicio();
 
 		pagRegistro = new Registro(builder);
-		pagRegistro.treeviewPaciente();
-		pagRegistro.treeviewFamiliar();
+		//pagRegistro.treeviewPaciente();
+		//pagRegistro.treeviewFamiliar();
 
 		pagCita = new Cita(builder);
-		pagCita.treeviewCita();
+		//pagCita.treeviewCita();
 
 		window.showAll();
 	}
@@ -76,7 +76,7 @@ public class Main {
 				Runtime obrun = Runtime.getRuntime();
 				
 				try {
-					obrun.exec("gnome-terminal -- htop");
+					obrun.exec("tilix -- htop");
 				} catch (IOException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();

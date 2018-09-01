@@ -437,6 +437,8 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="secondary_icon_stock">gtk-clear</property>
+                        <signal name="changed" handler="on_entryPacienteBuscar_changed" swapped="no"/>
+                        <signal name="icon-press" handler="on_entryPacienteBuscar_icon_press" swapped="no"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -546,6 +548,8 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="secondary_icon_stock">gtk-clear</property>
+                        <signal name="changed" handler="on_entryFamiliarBuscar_changed" swapped="no"/>
+                        <signal name="icon-press" handler="on_entryFamiliarBuscar_icon_press" swapped="no"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -684,6 +688,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="secondary_icon_stock">gtk-clear</property>
+                        <signal name="changed" handler="on_entryBuscarCita_changed" swapped="no"/>
                         <signal name="icon-press" handler="on_entryBuscarCita_icon_press" swapped="no"/>
                       </object>
                       <packing>
@@ -1050,10 +1055,12 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkEntry">
+                      <object class="GtkEntry" id="entryServiciosBuscar">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="secondary_icon_stock">gtk-clear</property>
+                        <signal name="changed" handler="on_entryServiciosBuscar_changed" swapped="no"/>
+                        <signal name="icon-press" handler="on_entryServiciosBuscar_icon_press" swapped="no"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -1194,6 +1201,7 @@
                         <property name="can_focus">True</property>
                         <property name="secondary_icon_stock">gtk-clear</property>
                         <signal name="changed" handler="on_entryEmpleadoBuscar_changed" swapped="no"/>
+                        <signal name="icon-press" handler="on_entryEmpleadoBuscar_icon_press" swapped="no"/>
                       </object>
                       <packing>
                         <property name="expand">False</property>

@@ -6,13 +6,16 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.gnome.gdk.Event;
 import org.gnome.gtk.Builder;
 import org.gnome.gtk.Button;
 import org.gnome.gtk.Button.Clicked;
 import org.gnome.gtk.CellRendererText;
 import org.gnome.gtk.DataColumnString;
 import org.gnome.gtk.Entry;
+import org.gnome.gtk.EntryIconPosition;
 import org.gnome.gtk.Entry.Changed;
+import org.gnome.gtk.Entry.IconPress;
 import org.gnome.gtk.ListStore;
 import org.gnome.gtk.TreeIter;
 import org.gnome.gtk.TreeModel;
@@ -43,13 +46,14 @@ public class Empleado extends Password implements ServerPG{
 		
 		this.builder = b;
 		
-		
+		//Button
 		buttonCitaBuscar = (Button) builder.getObject("buttonCitaBuscar");
 		buttonCitaBuscar.connect(on_buttonCitaBuscar_clicked());
 		
 		///Entry
 		empleadoBuscarEntry = (Entry) builder.getObject("entryEmpleadoBuscar");
 		empleadoBuscarEntry.connect(on_entryEmpleadoBuscar_changed());
+		empleadoBuscarEntry.connect(on_entryEmpleadoBuscar_icon_press());
 		
 		//TreeView
         view = (TreeView) builder.getObject("treeview_Empleados_ID");
@@ -67,44 +71,9 @@ public class Empleado extends Password implements ServerPG{
          
  
         /*Establezca TreeModel que se usa para obtener datos de origen para este TreeView*/
-        
-        listStore.clear(); //Limpiar TreeView
-		
-	    try {
-	        //Conexion con la base de datos
-	        DB = DriverManager.getConnection(URL, DBUSER, getPasswd());
-	 
-	        // Se hara una consulta  de la tabla.
-	        st = DB.createStatement();
-	        
-	        
-	        ResultSet rs = st.executeQuery( "SELECT * FROM \"Empleado\"; " );
-	        
-	        
-	        while    ( rs.next() ) {
-	        	
-	        	row = listStore.appendRow();
-	        	listStore.setValue(row, empIDColumn, rs.getString("empID"));
-                listStore.setValue(row, empNombreColumn, rs.getString("empNombre"));
-                listStore.setValue(row, empEdadColumn, rs.getString("empEdad"));
-                listStore.setValue(row, empRFCColumn, rs.getString("empRFC"));
-                listStore.setValue(row, empEmailColumn, rs.getString("empEmail"));
-                listStore.setValue(row, empTelefonoColumn, rs.getString("empTelefono"));
-	        }
-	        
-
-	        
-	        rs.close();
-	        st.close();
-	        DB.close();
-	        
-	    } catch (SQLException e) {
-	        System.err.println( e.getMessage() );
-	        
+        treeviewEmpleado();
 	    
-	    }   
-	    
-	    
+	    // Filtro de palabras "Nombre"
         filter = new TreeModelFilter(listStore, null);
         filter.setVisibleCallback(new TreeModelFilter.Visible() {
             public boolean onVisible(TreeModelFilter source, TreeModel base, TreeIter row) {
@@ -122,9 +91,7 @@ public class Empleado extends Password implements ServerPG{
                 }
             }
         });
-       
-        
-	    
+
 	    
 	    view.setModel(filter);
      
@@ -169,6 +136,19 @@ public class Empleado extends Password implements ServerPG{
 	}
 	
 	
+	private IconPress on_entryEmpleadoBuscar_icon_press() {
+		return new Entry.IconPress() {
+			
+			@Override
+			public void onIconPress(Entry arg0, EntryIconPosition arg1, Event arg2) {
+				// TODO Auto-generated method stub
+				empleadoBuscarEntry.setText("");
+				
+			}
+		};
+	}
+
+
 	private Changed on_entryEmpleadoBuscar_changed() {
 		return new Entry.Changed() {
 			
@@ -204,8 +184,6 @@ public class Empleado extends Password implements ServerPG{
 	 
 	        // Se hara una consulta  de la tabla.
 	        st = DB.createStatement();
-	        
-	        
 	        ResultSet rs = st.executeQuery( "SELECT * FROM \"Empleado\"; " );
 	        
 	        
@@ -220,54 +198,16 @@ public class Empleado extends Password implements ServerPG{
                 listStore.setValue(row, empTelefonoColumn, rs.getString("empTelefono"));
 	        }
 	        
-
-	        
 	        rs.close();
 	        st.close();
 	        DB.close();
 	        
 	    } catch (SQLException e) {
-	        System.err.println( e.getMessage() );
+	    	
+	    	System.err.println( e.getMessage() );
 	        
-	    
 	    }   
 	    
-	    
-        filter = new TreeModelFilter(listStore, null);
-        filter.setVisibleCallback(new TreeModelFilter.Visible() {
-            public boolean onVisible(TreeModelFilter source, TreeModel base, TreeIter row) {
-                final String contact;
-                final String search;
-                
-                //Se ingresa una palabra aunque aunque sea minuscula
-                contact = base.getValue(row, empNombreColumn).toLowerCase();
-                search = empleadoBuscarEntry.getText().toLowerCase();
-
-                if (contact.contains(search)) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-        });
-       
-        
-	    
-	    
-	    view.setModel(filter);
-	    
-	    
-	    
-	    
-	    
-	    
-
-        
-        
-        
-        
-	    
-	
 	}
 
 }

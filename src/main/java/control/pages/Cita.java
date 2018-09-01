@@ -19,9 +19,12 @@ import org.gnome.gtk.ComboBox;
 import org.gnome.gtk.DataColumnString;
 import org.gnome.gtk.Entry;
 import org.gnome.gtk.EntryIconPosition;
+import org.gnome.gtk.Entry.Changed;
 import org.gnome.gtk.Entry.IconPress;
 import org.gnome.gtk.ListStore;
 import org.gnome.gtk.TreeIter;
+import org.gnome.gtk.TreeModel;
+import org.gnome.gtk.TreeModelFilter;
 import org.gnome.gtk.TreePath;
 import org.gnome.gtk.TreeView;
 import org.gnome.gtk.TreeView.RowActivated;
@@ -43,6 +46,7 @@ public class Cita extends Password implements ServerPG{
     ListStore listStore;
     TreeView view;
     TreeViewColumn vertical;
+    TreeModelFilter filter;
     TreeIter row;
     DataColumnString citaIDColumn, paciNombreColumn, servNombreColumn, citaFechaColumn, servHoraInicioColumn, servHoraSalidaColumn, empNombreColumn;
     CellRendererText citaIDText, paciNombreText, servNombreText, citaFechaText, servHoraInicioText, servHoraSalidaText, empNombreText;
@@ -57,7 +61,6 @@ public class Cita extends Password implements ServerPG{
 	public Cita(Builder b) {
 		
 		this.builder = b;
-		
 		
 		//#################		Calendar		#################	\\
 		
@@ -94,6 +97,7 @@ public class Cita extends Password implements ServerPG{
 		citaPacienteEntry = (Entry) builder.getObject("entryIDClientCitas");
 		citaFechaEntry = (Entry) builder.getObject("entryFechaCitas");
 		buscarCitaEntry = (Entry) builder.getObject("entryBuscarCita");
+		buscarCitaEntry.connect(on_entryBuscarCita_changed());
 		buscarCitaEntry.connect(on_entryBuscarCita_icon_press());		
 		
 		//#################		Button		#################	\\
@@ -133,8 +137,31 @@ public class Cita extends Password implements ServerPG{
  
         /*Establezca TreeModel que se usa para obtener datos de origen para este TreeView*/
         view.connect(on_treeview_Citas_ID_row_activated());
-        view.setModel(listStore);
         
+        treeviewCita();
+        
+	    // Filtro de palabras "Nombre"
+        filter = new TreeModelFilter(listStore, null);
+        filter.setVisibleCallback(new TreeModelFilter.Visible() {
+            public boolean onVisible(TreeModelFilter source, TreeModel base, TreeIter row) {
+                final String cita;
+                final String search;
+                
+                //Se ingresa una palabra aunque aunque sea minuscula
+                cita = base.getValue(row, paciNombreColumn).toLowerCase();
+                search = buscarCitaEntry.getText().toLowerCase();
+
+                if (cita.contains(search)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        });
+        
+        
+        //view.setModel(listStore);
+        view.setModel(filter);
         
         /*Crear instancias de TreeViewColumn*/
         vertical = view.appendColumn();
@@ -191,10 +218,24 @@ public class Cita extends Password implements ServerPG{
         
 	}
 	
+	
+	
 	//---------------------- Accion de Botones ----------------------//
 	
-	
-	
+	private Changed on_entryBuscarCita_changed() {
+		return new Entry.Changed() {
+			
+			@Override
+			public void onChanged(Entry arg0) {
+				// TODO Auto-generated method stub
+				filter.refilter();
+				
+			}
+		};
+	}
+
+
+
 	private Clicked on_buttonCitaEditar_clicked() {
 		return new Button.Clicked() {
 			
@@ -227,15 +268,13 @@ public class Cita extends Password implements ServerPG{
 			    } catch (SQLException e) {
 			        System.err.println("Error: " +e.getMessage() );
 			 
-			    }
-				
-				
-				
+			    }		
 				
 			}
 		};
 	}
 
+	
 	private Clicked on_buttonCitaEliminar_clicked() {
 		return new Button.Clicked() {
 			
@@ -269,7 +308,9 @@ public class Cita extends Password implements ServerPG{
 			}
 		};
 	}
+	
 
+	@SuppressWarnings("unused")
 	private RowActivated on_treeview_Citas_ID_row_activated() {
 		return new TreeView.RowActivated() {
 			

@@ -6,11 +6,18 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.gnome.gdk.Event;
 import org.gnome.gtk.Builder;
 import org.gnome.gtk.CellRendererText;
 import org.gnome.gtk.DataColumnString;
+import org.gnome.gtk.Entry;
+import org.gnome.gtk.EntryIconPosition;
+import org.gnome.gtk.Entry.Changed;
+import org.gnome.gtk.Entry.IconPress;
 import org.gnome.gtk.ListStore;
 import org.gnome.gtk.TreeIter;
+import org.gnome.gtk.TreeModel;
+import org.gnome.gtk.TreeModelFilter;
 import org.gnome.gtk.TreeView;
 import org.gnome.gtk.TreeViewColumn;
 
@@ -27,19 +34,23 @@ public class Servicio extends Password implements ServerPG{
     ListStore listStore;
     DataColumnString servIDColumn, servNombreColumn, servHoraInicioColumn, servHoraSalidaColumn, empNombreColumn;  
     CellRendererText servIDText, servNombreText, servHoraInicioText, servHoraSalidaText, empNombreText;
+    TreeModelFilter filter;
+    Entry serviciosBuscarEntry;
     Connection DB =null;
 	Statement st = null;
 
 	public Servicio(Builder b) {
 		
 		this.builder = b;
-	}
-	
-	public void treeviewServicio() {
+		
+		//Entry
+		serviciosBuscarEntry = (Entry) builder.getObject("entryServiciosBuscar");
+		serviciosBuscarEntry.connect(on_entryServiciosBuscar_icon_press());
+		serviciosBuscarEntry.connect(on_entryServiciosBuscar_changed());
 		
 		//TreeView
         view = (TreeView) builder.getObject("treeview_Servicios_ID");
- 
+        
         /* Construccion del modelo */
         listStore = new ListStore(new DataColumnString[]{
         		
@@ -49,9 +60,33 @@ public class Servicio extends Password implements ServerPG{
                	servHoraSalidaColumn = new DataColumnString(),
                 empNombreColumn = new DataColumnString(),
         });
- 
+        
+        treeviewServicio();
+        
+        
+	    // Filtro de palabras "Nombre"
+        filter = new TreeModelFilter(listStore, null);
+        filter.setVisibleCallback(new TreeModelFilter.Visible() {
+            public boolean onVisible(TreeModelFilter source, TreeModel base, TreeIter row) {
+                final String servicio;
+                final String search;
+                
+                //Se ingresa una palabra aunque aunque sea minuscula
+                servicio = base.getValue(row, servNombreColumn).toLowerCase();
+                search = serviciosBuscarEntry.getText().toLowerCase();
+
+                if (servicio.contains(search)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        });
+        
+        
+        
         /*Establezca TreeModel que se usa para obtener datos de origen para este TreeView*/
-        view.setModel(listStore);
+        view.setModel(filter);
         
         
         /*Crear instancias de TreeViewColumn*/
@@ -86,10 +121,35 @@ public class Servicio extends Password implements ServerPG{
         vertical.setExpand(true);
         empNombreText = new CellRendererText(vertical);
         empNombreText.setText(empNombreColumn);
- 
         
-        
-        listStore.clear(); //Limpiar TreeView
+	}
+	
+	private Changed on_entryServiciosBuscar_changed() {
+		return new Changed() {
+			
+			@Override
+			public void onChanged(Entry arg0) {
+				// TODO Auto-generated method stub
+				filter.refilter();
+			}
+		};
+	}
+
+	private IconPress on_entryServiciosBuscar_icon_press() {
+		return new Entry.IconPress() {
+			
+			@Override
+			public void onIconPress(Entry arg0, EntryIconPosition arg1, Event arg2) {
+				serviciosBuscarEntry.setText("");
+				
+			}
+		};
+	}
+
+	public void treeviewServicio() {
+		
+		
+		listStore.clear(); //Limpiar TreeView
 		
 	    try {
 	        //Conexion con la base de datos

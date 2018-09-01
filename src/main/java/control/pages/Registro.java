@@ -7,14 +7,20 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+import org.gnome.gdk.Event;
 import org.gnome.gtk.Builder;
 import org.gnome.gtk.Button;
 import org.gnome.gtk.Button.Clicked;
 import org.gnome.gtk.CellRendererText;
 import org.gnome.gtk.DataColumnString;
 import org.gnome.gtk.Entry;
+import org.gnome.gtk.EntryIconPosition;
+import org.gnome.gtk.Entry.Changed;
+import org.gnome.gtk.Entry.IconPress;
 import org.gnome.gtk.ListStore;
 import org.gnome.gtk.TreeIter;
+import org.gnome.gtk.TreeModel;
+import org.gnome.gtk.TreeModelFilter;
 import org.gnome.gtk.TreePath;
 import org.gnome.gtk.TreeView;
 import org.gnome.gtk.TreeView.RowActivated;
@@ -26,25 +32,25 @@ import credential.database.ServerPG;
 public class Registro extends Password implements ServerPG{
 	
 	Builder builder;
-    TreeView view;
+    TreeView viewPaciente, viewFamiliar;
     TreeViewColumn vertical;
     TreeIter row;
     ListStore listStorePaciente,listStoreFamiliar ;
     //Paciente
     Button buttonPacienteActualizar;
-    Entry paciNombreEntry, paciEdadEntry, paciEmailEntry, paciTelefonoEntry;
+    Entry buscarPacienteEntry, paciNombreEntry, paciEdadEntry, paciEmailEntry, paciTelefonoEntry;
     DataColumnString paciIDColumn, paciNombreColumn, paciEdadColumn, paciEmailColumn, paciTelefonoColumn;  
     CellRendererText paciIDText, paciNombreText, paciEdadText, paciEmailText, paciTelefonoText;
     //Familiar
     Button buttonFamiliarActualizar;
-    Entry famNombreEntry, famEdadEntry, famEmailEntry, famTelefonoEntry;
+    Entry buscarFamiliarEntry, famNombreEntry, famEdadEntry, famEmailEntry, famTelefonoEntry;
     DataColumnString famIDColumn, famNombreColumn, famEdadColumn, famEmailColumn, famTelefonoColumn, famPacienteColumn;  
     CellRendererText famIDText, famNombreText, famEdadText, famEmailText, famTelefonoText, famPacienteText;
     //Botones Generales Registro
     Button buttonRegGuardar, buttonRegLimpiar,buttonRegEliminar, buttonRegEditar;
     //Se lamacenara el ID de la tabla Paciente y Familiar
     String idPaciente, idFamiliar;
-    
+    TreeModelFilter filterPaciente, filterFamiliar;
     Connection DB =null;
 	Statement st = null;
 	ResultSet rs = null;
@@ -76,7 +82,11 @@ public class Registro extends Password implements ServerPG{
 		///////////////////////////		Paciente	///////////////////////////
 		
 		//******************** Entry	********************//
-				
+		
+		buscarPacienteEntry = (Entry) builder.getObject("entryPacienteBuscar");
+		buscarPacienteEntry.connect(on_entryPacienteBuscar_icon_press());
+		buscarPacienteEntry.connect(on_entryPacienteBuscar_changed());
+		
 		paciNombreEntry = (Entry) builder.getObject("entryPaciNombre");
 		paciEdadEntry = (Entry) builder.getObject("entryPaciEdad");
 		paciEmailEntry = (Entry) builder.getObject("entryPaciEmail");
@@ -90,7 +100,7 @@ public class Registro extends Password implements ServerPG{
 		
 		//******************** TreeView	********************//
 		
-		view = (TreeView) builder.getObject("treeview_Pacientes_ID");
+		viewPaciente = (TreeView) builder.getObject("treeview_Pacientes_ID");
  
         /* Construccion del modelo */
         listStorePaciente = new ListStore(new DataColumnString[]{
@@ -104,51 +114,60 @@ public class Registro extends Password implements ServerPG{
         });
         
         //on_treeview_Citas_ID_row_activated
-        view.connect(on_treeview_Pacientes_ID_row_activated());
+        viewPaciente.connect(on_treeview_Pacientes_ID_row_activated());
+        
+        
+        treeviewPaciente();
+        
+        //filterPaciente();
         
         /*Establezca TreeModel que se usa para obtener datos de origen para este TreeView*/
-        view.setModel(listStorePaciente);
+        viewPaciente.setModel(listStorePaciente);
         
         
         /*Crear instancias de TreeViewColumn*/
-        vertical = view.appendColumn();
+        vertical = viewPaciente.appendColumn();
         vertical.setTitle("ID");
         paciIDText  = new CellRendererText(vertical);
         paciIDText.setText(paciIDColumn);
         
         
-        vertical = view.appendColumn();
+        vertical = viewPaciente.appendColumn();
         vertical.setTitle("Nombre");
         vertical.setExpand(true);
         paciNombreText = new CellRendererText(vertical);
         paciNombreText.setText(paciNombreColumn);
         
         
-        vertical = view.appendColumn();
+        vertical = viewPaciente.appendColumn();
         vertical.setTitle("Edad");
         paciEdadText = new CellRendererText(vertical);
         paciEdadText.setText(paciEdadColumn);
         
         
-        vertical = view.appendColumn();
+        vertical = viewPaciente.appendColumn();
         vertical.setTitle("Email");
         vertical.setExpand(true);
         paciEmailText = new CellRendererText(vertical);
         paciEmailText.setText(paciEmailColumn);
         
-        vertical = view.appendColumn();
+        vertical = viewPaciente.appendColumn();
         vertical.setTitle("Telefono");
         vertical.setExpand(true);
         paciTelefonoText = new CellRendererText(vertical);
         paciTelefonoText.setText(paciTelefonoColumn);
         
-        
+       
         ///////////////////////////		Familiar	///////////////////////////
         
         
         //******************** Entry	********************//
         
         //famNombreEntry, famEdadEntry, famEmaiEntry, famTelefono;
+        
+        buscarFamiliarEntry = (Entry) builder.getObject("entryFamiliarBuscar");
+        buscarFamiliarEntry.connect(on_entryFamiliarBuscar_icon_press());
+        buscarPacienteEntry.connect(on_entryFamiliarBuscar_changed());
         
         famNombreEntry = (Entry) builder.getObject("entryFamNombre");
         famEdadEntry = (Entry) builder.getObject("entryFamEdad");
@@ -163,7 +182,7 @@ public class Registro extends Password implements ServerPG{
 		
         //******************** TreeView	********************//
         
-        view = (TreeView) builder.getObject("treeview_Familiares_ID");
+        viewFamiliar = (TreeView) builder.getObject("treeview_Familiares_ID");
  
         /* Construccion del modelo */
         listStoreFamiliar = new ListStore(new DataColumnString[]{
@@ -175,52 +194,75 @@ public class Registro extends Password implements ServerPG{
         		famTelefonoColumn = new DataColumnString(),
         		famPacienteColumn = new DataColumnString(),
         });
+        
+        //on_treeview_Citas_ID_row_activated
+        //viewFamiliar.connect(on_treeview_Pacientes_ID_row_activated());
+        
+        treeviewFamiliar();
+        
+	    /* Filtro de palabras "Nombre"
+        filterFamiliar = new TreeModelFilter(listStoreFamiliar, null);
+        filterFamiliar.setVisibleCallback(new TreeModelFilter.Visible() {
+            public boolean onVisible(TreeModelFilter source, TreeModel base, TreeIter row) {
+                final String familiar;
+                final String search;
+                
+                //Se ingresa una palabra aunque aunque sea minuscula
+                familiar = base.getValue(row, famNombreColumn).toLowerCase();
+                search = buscarFamiliarEntry.getText().toLowerCase();
+
+                if (familiar.contains(search)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        });
+        
+        */
  
         /*Establezca TreeModel que se usa para obtener datos de origen para este TreeView*/
-        view.setModel(listStoreFamiliar);
+        viewFamiliar.setModel(listStoreFamiliar);
         
         
         /*Crear instancias de TreeViewColumn*/
-        vertical = view.appendColumn();
+        vertical = viewFamiliar.appendColumn();
         vertical.setTitle("ID");
         famIDText  = new CellRendererText(vertical);
         famIDText.setText(famIDColumn);
         
         
-        vertical = view.appendColumn();
+        vertical = viewFamiliar.appendColumn();
         vertical.setTitle("Nombre");
         vertical.setExpand(true);
         famNombreText = new CellRendererText(vertical);
         famNombreText.setText(famNombreColumn);
         
         
-        vertical = view.appendColumn();
+        vertical = viewFamiliar.appendColumn();
         vertical.setTitle("Edad");
         famEdadText = new CellRendererText(vertical);
         famEdadText.setText(famEdadColumn);
         
         
-        vertical = view.appendColumn();
+        vertical = viewFamiliar.appendColumn();
         vertical.setTitle("Email");
         vertical.setExpand(true);
         famEmailText = new CellRendererText(vertical);
         famEmailText.setText(famEmailColumn);
         
-        vertical = view.appendColumn();
+        vertical = viewFamiliar.appendColumn();
         vertical.setTitle("Telefono");
         vertical.setExpand(true);
         famTelefonoText = new CellRendererText(vertical);
         famTelefonoText.setText(famTelefonoColumn);
         
-        vertical = view.appendColumn();
+        vertical = viewFamiliar.appendColumn();
         vertical.setTitle("Paciente");
         vertical.setExpand(true);
         famPacienteText = new CellRendererText(vertical);
         famPacienteText.setText(famPacienteColumn);
         
-        
-        //on_treeview_Citas_ID_row_activated
-        view.connect(on_treeview_Pacientes_ID_row_activated());
         
         
        
@@ -231,8 +273,88 @@ public class Registro extends Password implements ServerPG{
 
 	///////////////////////// Acciones del botones /////////////////////////
 	
+	private void filterPaciente() {
+		
+	    // Filtro de palabras "Nombre"
+        filterPaciente = new TreeModelFilter(listStorePaciente, null);
+        filterPaciente.setVisibleCallback(new TreeModelFilter.Visible() {
+            public boolean onVisible(TreeModelFilter source, TreeModel base, TreeIter row) {
+                final String paciente;
+                final String search;
+                
+                //Se ingresa una palabra aunque aunque sea minuscula
+                paciente = base.getValue(row, paciNombreColumn).toLowerCase();
+                search = buscarPacienteEntry.getText().toLowerCase();
+
+                if (paciente.contains(search)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        });
+		
+	}
 	
 	
+	private Changed on_entryFamiliarBuscar_changed() {
+		return new Entry.Changed() {
+			
+			@Override
+			public void onChanged(Entry arg0) {
+				
+				filterFamiliar.refilter();
+				
+			}
+		};
+	}
+
+
+
+
+	private IconPress on_entryFamiliarBuscar_icon_press() {
+		return new Entry.IconPress() {
+			
+			@Override
+			public void onIconPress(Entry arg0, EntryIconPosition arg1, Event arg2) {
+				// TODO Auto-generated method stub
+				buscarFamiliarEntry.setText("");
+				
+			}
+		};
+	}
+
+
+
+
+	private Changed on_entryPacienteBuscar_changed() {
+		return new Entry.Changed() {
+			
+			@Override
+			public void onChanged(Entry arg0) {
+				filterPaciente.refilter();
+				
+			}
+		};
+	}
+
+
+
+
+	private IconPress on_entryPacienteBuscar_icon_press() {
+		return new Entry.IconPress() {
+			
+			@Override
+			public void onIconPress(Entry arg0, EntryIconPosition arg1, Event arg2) {
+				buscarPacienteEntry.setText("");
+				
+			}
+		};
+	}
+
+
+
+
 	private Clicked on_buttonRegEditar_clicked() {
 		return new Button.Clicked() {
 			
@@ -322,6 +444,7 @@ public class Registro extends Password implements ServerPG{
 	}
 
 
+	@SuppressWarnings("unused")
 	private RowActivated on_treeview_Pacientes_ID_row_activated() {
 		return new TreeView.RowActivated() {
 			
